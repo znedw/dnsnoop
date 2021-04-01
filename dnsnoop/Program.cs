@@ -91,7 +91,7 @@ namespace dnsnoop
             {
                 var qType = q.Type;
                 var qName = q.Name;
-                var serverIp = ipv4.DestAddress;
+                var serverIp = ipv4.SourceAddress;
                 string response;
                 if (dnsReply.AnswerRecords == null || dnsReply.AnswerRecords.Count < 1)
                 {
