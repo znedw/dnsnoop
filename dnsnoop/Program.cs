@@ -92,26 +92,43 @@ namespace dnsnoop
                 var qType = q.Type;
                 var qName = q.Name;
                 var serverIp = ipv4.DestAddress;
-                var response = string.Join(", ", dnsReply.AnswerRecords?.Select(d =>
+                string response;
+                if (dnsReply.AnswerRecords == null || dnsReply.AnswerRecords.Count < 1)
                 {
-                    var value = d.Type switch
+                    response = dnsReply.ResponseCode switch
                     {
-                        RecordType.A => ((IPAddressResourceRecord) d).IPAddress.ToString(),
-                        RecordType.AAAA => ((IPAddressResourceRecord) d).IPAddress.ToString(),
-                        RecordType.CNAME => ((CanonicalNameResourceRecord) d).CanonicalDomainName.ToString(),
-                        RecordType.PTR => ((PointerResourceRecord) d).PointerDomainName.ToString(),
-                        RecordType.MX => FormatMx((MailExchangeResourceRecord) d),
-                        RecordType.NS => ((NameServerResourceRecord) d).NSDomainName.ToString(),
-                        RecordType.SOA => ((StartOfAuthorityResourceRecord) d).MasterDomainName.ToString(),
-                        RecordType.SRV => FormatSrv((ServiceResourceRecord) d),
-                        RecordType.TXT => FormatTxt((TextResourceRecord) d),
-                        RecordType.OPT => throw new NotImplementedException(),
-                        RecordType.ANY => throw new NotImplementedException(),
-                        RecordType.WKS => throw new NotImplementedException(),
-                        _ => throw new Exception($"I don't recognize that query type, {d.Type}")
+                        ResponseCode.NoError => nameof(ResponseCode.NoError).ToUpper(),
+                        ResponseCode.FormatError => nameof(ResponseCode.FormatError).ToUpper(),
+                        ResponseCode.ServerFailure => "SERVFAIL",
+                        ResponseCode.NameError => "NXDOMAIN",
+                        ResponseCode.NotImplemented => nameof(ResponseCode.NotImplemented).ToUpper(),
+                        ResponseCode.Refused => nameof(ResponseCode.Refused).ToUpper(),
+                        _ => "RESERVED"
                     };
-                    return $"{d.Type}: {value}";
-                }) ?? Array.Empty<string>());
+                }
+                else
+                {
+                   response = string.Join(", ", dnsReply.AnswerRecords?.Select(d =>
+                    {
+                        var value = d.Type switch
+                        {
+                            RecordType.A => ((IPAddressResourceRecord) d).IPAddress.ToString(),
+                            RecordType.AAAA => ((IPAddressResourceRecord) d).IPAddress.ToString(),
+                            RecordType.CNAME => ((CanonicalNameResourceRecord) d).CanonicalDomainName.ToString(),
+                            RecordType.PTR => ((PointerResourceRecord) d).PointerDomainName.ToString(),
+                            RecordType.MX => FormatMx((MailExchangeResourceRecord) d),
+                            RecordType.NS => ((NameServerResourceRecord) d).NSDomainName.ToString(),
+                            RecordType.SOA => ((StartOfAuthorityResourceRecord) d).MasterDomainName.ToString(),
+                            RecordType.SRV => FormatSrv((ServiceResourceRecord) d),
+                            RecordType.TXT => FormatTxt((TextResourceRecord) d),
+                            RecordType.OPT => throw new NotImplementedException(),
+                            RecordType.ANY => throw new NotImplementedException(),
+                            RecordType.WKS => throw new NotImplementedException(),
+                            _ => throw new Exception($"I don't recognize that query type, {d.Type}")
+                        };
+                        return $"{d.Type}: {value}";
+                    }) ?? Array.Empty<string>());
+                }
 
                 Console.WriteLine($"{qType}\t{qName}\t{serverIp}\t{response}");
             }
