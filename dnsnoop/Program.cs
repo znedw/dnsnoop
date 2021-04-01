@@ -47,7 +47,7 @@ namespace dnsnoop
             Console.WriteAscii("dnsnoop", Color.Red);
             Console.WriteLine(_version, Color.Cornsilk);
             Console.WriteLine("using SharpPcap v{0}", SharpPcap.Version.VersionString);
-            Console.WriteLine($"Listening on device {selectedDevice.Description} for traffic on port {port}",
+            Console.WriteLine($"Listening on device {selectedDevice.Description ?? selectedDevice.Name} for traffic on port {port}",
                 Color.LawnGreen);
 
             var packets = Observable.FromEventPattern<PacketArrivalEventHandler, CaptureEventArgs>(
@@ -151,7 +151,7 @@ namespace dnsnoop
                 var ipAddr = d.Addresses
                     .FirstOrDefault(ip => ip.Addr.ipAddress?.AddressFamily == AddressFamily.InterNetwork)?.Addr
                     ?.ipAddress.ToString() ?? "N/a";
-                Console.WriteLine($"({i}). {d.Description} ({ipAddr})");
+                Console.WriteLine($"({i}). {d.Description ?? d.Name} ({ipAddr})");
             }
 
             Environment.Exit(0);
