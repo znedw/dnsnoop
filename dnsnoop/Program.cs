@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
 using DNS.Protocol;
 using DNS.Protocol.ResourceRecords;
@@ -22,51 +23,56 @@ namespace dnsnoop
         Info,
         Verbose
     }
-
+    
     class Program
     {
-        private static readonly string _version = (Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly())
+        private static readonly string Version = (Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly())
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion!;
-        
-        private static LogLevel _logLevel { get; set; }
 
+        private static LogLevel LogLevel { get; set; }
 
         /// <param name="port">The port number to listen on</param>
         /// <param name="logLevel">Log level (info, debug, verbose)</param>
         /// <param name="listDevices">List all capture devices</param>
         /// <param name="device">Use device at index</param>
-        static void Main(int port = 53, LogLevel logLevel = LogLevel.Info, bool listDevices = false, int device = 0)
+        private static void Main(int port = 53, LogLevel logLevel = LogLevel.Info, bool listDevices = false, int device = 0)
         {
             if (listDevices)
                 ListDevices();
-            _logLevel = logLevel;
+            LogLevel = logLevel;
 
             var selectedDevice = LibPcapLiveDeviceList.Instance.ElementAtOrDefault(device);
             if (selectedDevice == null) return;
 
             Console.WriteAscii("dnsnoop", Color.Red);
-            Console.WriteLine(_version, Color.Cornsilk);
-            Console.WriteLine("using SharpPcap v{0}", SharpPcap.Version.VersionString);
+            Console.WriteLine(Version, Color.Cornsilk);
+            Console.WriteLine("using SharpPcap v{0}", SharpPcap.Pcap.Version);
             Console.WriteLine($"Listening on device {selectedDevice.Description ?? selectedDevice.Name} for traffic on port {port}",
                 Color.LawnGreen);
 
-            var packets = Observable.FromEventPattern<PacketArrivalEventHandler, CaptureEventArgs>(
-                ev => selectedDevice.OnPacketArrival += ev, ev => selectedDevice.OnPacketArrival -= ev);
 
+            /* @TODO: this could be better...
+             <see cref="PacketCapture"/> is a ref struct, so we've gotta box it / heap alloc here into 'RawPacket'
+             because it can't be used as a type param...
+            */
+            var packets = new Subject<RawCapture>();
+            selectedDevice.OnPacketArrival += (_, capture) =>
+            {
+                packets.OnNext(capture.GetPacket());
+            };
+            
             var dnsReplies = from rx in packets
-                let parsed = EthernetIIFactory.Instance.ParseAs(rx.EventArgs.Packet.Data)
-                let layers = parsed?.Layers() ?? Enumerable.Empty<IPacket>()
-                let ipv4 = layers.OfType<IPv4>()?.FirstOrDefault()
-                where (layers.OfType<UDP>().Any()
-                       && layers.OfType<IPv4>().Any())
-                select parsed;
+                             let parsed = EthernetIIFactory.Instance.ParseAs(rx.Data)
+                             let layers = parsed?.Layers() ?? Enumerable.Empty<IPacket>()
+                             where layers.OfType<UDP>().Any()
+                                   && layers.OfType<IPv4>().Any()
+                             select parsed;
 
             using var dnsSub = dnsReplies.Subscribe(PrintPacket);
 
             selectedDevice.Open();
             selectedDevice.Filter = $"udp and port {port}";
             selectedDevice.StartCapture();
-
 
             Console.WriteLine("Press enter to stop");
 
@@ -84,7 +90,7 @@ namespace dnsnoop
             if (dnsReply?.Questions == null || ipv4 == null) return;
 
 
-            if (_logLevel == LogLevel.Verbose)
+            if (LogLevel == LogLevel.Verbose)
                 Console.WriteLine(dnsReply);
 
             foreach (var q in dnsReply.Questions)
@@ -141,7 +147,7 @@ namespace dnsnoop
 
         private static string FormatMx(MailExchangeResourceRecord mx) => $"{mx.ExchangeDomainName} {mx.Preference}";
 
-        public static IEnumerable<(T item, int index)> WithIndex<T>(IEnumerable<T> source) =>
+        private static IEnumerable<(T item, int index)> WithIndex<T>(IEnumerable<T> source) =>
             source.Select((item, index) => (item, index));
 
         private static void ListDevices()
