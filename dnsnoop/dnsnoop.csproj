@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <PackAsTool>true</PackAsTool>
@@ -20,11 +20,11 @@
 
   <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.15" />
-    <PackageReference Include="DNS" Version="6.1.0" />
+    <PackageReference Include="DNS" Version="7.0.0" />
     <PackageReference Include="LibPacketGremlin" Version="1.2.0" />
-    <PackageReference Include="SharpPcap" Version="6.0.0" />
-    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.21352.2" />
-    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="SharpPcap" Version="6.2.5" />
+    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.4.0-alpha.22272.1" />
+    <PackageReference Include="System.Reactive" Version="6.0.0" />
   </ItemGroup>
 
 </Project>
