@@ -7,7 +7,7 @@
     <LangVersion>latest</LangVersion>
     <PackAsTool>true</PackAsTool>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <RepositoryUrl>https://github.com/znedw/dnsnoop.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
